@@ -13,11 +13,14 @@ const COLORS = {
 };
 export default class Bubble extends Phaser.Physics.Arcade.Sprite {
   public colorCode: number;
+  public clusterProcessed: boolean;
+  public removedFromProcess: boolean;
   constructor(scene: Phaser.Scene, x: number, y: number, texture: string) {
     super(scene, x, y, "bubble");
 
     this.scene.add.existing(this);
-
+    this.clusterProcessed = false;
+    this.removedFromProcess = false;
     scene.physics.add.existing(this);
     this.setCircle(ballSize, offsetX, offsetY);
     //this.setInteractive();
