@@ -40,6 +40,14 @@ export default class BubbleManager {
   public initBubbles(scene: Phaser.Scene): void {
     //scene.add.existing(this);
 
+    let ceiling = new Phaser.GameObjects.Rectangle(
+      scene,
+      scene.cameras.main.width / 2,
+      0,
+      scene.cameras.main.width,
+      50
+    );
+
     this.scene = scene;
     this.bubblePool = scene.add.group({
       classType: Bubble,
@@ -73,6 +81,14 @@ export default class BubbleManager {
     scene.physics.add.overlap(
       this.shootGroup,
       this.gridGroup,
+      this.snapBubbleDelay,
+      null,
+      this
+    );
+
+    scene.physics.add.overlap(
+      this.shootGroup,
+      ceiling,
       this.snapBubbleDelay,
       null,
       this

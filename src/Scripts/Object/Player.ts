@@ -9,6 +9,8 @@ export default class Player extends Phaser.GameObjects.Rectangle {
   private launchPos: Phaser.Math.Vector2;
   private offset: number;
   private bubblespeed: number;
+  private line: Phaser.Geom.Line;
+  private guidanceHead: Phaser.Geom.Line;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y * 3.5, x * 2, y, 0xff0000, 0.5);
@@ -24,7 +26,25 @@ export default class Player extends Phaser.GameObjects.Rectangle {
 
     this.bubblespeed = 2000;
 
-    this.setInteractive();
+    let graphics = scene.add.graphics();
+    this.line = new Phaser.Geom.Line(
+      this.launchPos.x,
+      this.launchPos.y,
+      this.launchPos.x,
+      this.launchPos.y
+    );
+
+    this.guidanceHead = new Phaser.Geom.Line(
+      this.launchPos.x,
+      this.launchPos.y,
+      this.launchPos.x,
+      this.launchPos.y
+    );
+    graphics.lineStyle(10, 0x00fff0);
+    graphics.strokeLineShape(this.line);
+    graphics.strokeLineShape(this.guidanceHead);
+
+    this.setInteractive({ draggable: true });
     this.heldBubbles = new Array<Bubble>();
     this.heldBubbles.push(BubbleManager.Instance.getBubble());
     this.heldBubbles.push(BubbleManager.Instance.getBubble());
@@ -35,15 +55,28 @@ export default class Player extends Phaser.GameObjects.Rectangle {
 
     this.setBubbleForLaunch();
 
-    this.on("pointerdown", function (pointer: Phaser.Input.Pointer) {
-      //console.log("touch");
-      //console.log(pointer.x);
-      //console.log(pointer.y);
-      //this.heldBubbles[0].setPosition(pointer.x, pointer.y);
+    this.on("dragstart", function (pointer: Phaser.Input.Pointer) {
+      console.log("dragstart");
     });
 
-    this.on("pointerup", function (pointer: Phaser.Input.Pointer) {
-      //console.log("lift");
+    this.on("drag", function (pointer: Phaser.Input.Pointer) {
+      //console.log(pointer.x);
+      //console.log(pointer.y);
+
+      this.line.x2 = pointer.x;
+      this.line.y2 = pointer.y;
+
+      this.guidanceHead.x1 = -pointer.x;
+      this.guidanceHead.y1 = -pointer.y;
+      console.log(this.line.x2);
+      graphics.clear();
+      graphics.lineStyle(10, 0x00fff0);
+      graphics.strokeLineShape(this.line);
+      graphics.strokeLineShape(this.guidanceHead);
+    });
+
+    this.on("dragend", function (pointer: Phaser.Input.Pointer) {
+      console.log("lift");
       //console.log(pointer.x);
       //console.log(pointer.y);
 
@@ -58,6 +91,10 @@ export default class Player extends Phaser.GameObjects.Rectangle {
       );
       dir.normalize();
       //console.log(dir);
+      this.line.setTo(0, 0, 0, 0);
+      graphics.clear();
+      graphics.lineStyle(2, 0x00ff00);
+      graphics.strokeLineShape(this.line);
 
       this.launchBubble(dir);
     });
