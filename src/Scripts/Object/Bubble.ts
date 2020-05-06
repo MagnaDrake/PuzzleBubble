@@ -1,4 +1,5 @@
 import * as Phaser from "phaser";
+import BubbleManager from "../Manager/BubbleManager";
 const offsetX: number = 33;
 const offsetY: number = 33;
 const ballSize: number = 56;
@@ -15,6 +16,8 @@ export default class Bubble extends Phaser.Physics.Arcade.Sprite {
   public colorCode: number;
   public clusterProcessed: boolean;
   public removedFromProcess: boolean;
+  public row: number;
+  public column: number;
   constructor(scene: Phaser.Scene, x: number, y: number, texture: string) {
     super(scene, x, y, "bubble");
 
@@ -47,5 +50,52 @@ export default class Bubble extends Phaser.Physics.Arcade.Sprite {
   }
   update() {
     console.log(this.x + " " + this.y);
+  }
+
+  pop() {
+    //no idea what im doing
+    //BubbleManager.Instance.sortBubbles();
+    console.log("poppin");
+    //BubbleManager.Instance.setBubblePosOnGrid(this, this.row, this.column);
+    BubbleManager.Instance.removeBubbleFromGrid(this);
+    //this.setPosition(this.x, this.y);
+
+    this.play("bubblePop");
+    //this.on("animationstart", BubbleManager.Instance.sortBubbles, this);
+
+    BubbleManager.Instance.bubblePool.add(this);
+    BubbleManager.Instance.gridGroup.remove(this);
+    //BubbleManager.Instance.removeBubbleFromGrid(this);
+    this.on("animationcomplete", this.popCallback, this);
+  }
+
+  drop() {
+    console.log("IM DROPPING");
+    BubbleManager.Instance.removeBubbleFromGrid(this);
+
+    this.setVelocityY(500);
+    let tween = this.scene.tweens.add({
+      targets: this,
+      duration: 350,
+      alpha: 0,
+      callbackScope: this,
+      onComplete: this.popCallback,
+    });
+    //BubbleManager.Instance.removeBubbleFromGrid(this);
+  }
+
+  popCallback() {
+    this.setVelocity(0, 0);
+    console.log("pop bubble " + this.name);
+    //BubbleManager.Instance.removeBubbleFromGrid(this);
+
+    this.setPosition(42000, 42000); //put offscren
+    //console.group(this.parentContainer);
+    BubbleManager.Instance.bubblePool.killAndHide(this);
+    //this.scene.physics.world.removeCollider(this);
+    this.setTexture("bubble");
+    this.setActive(false).setVisible(false);
+    //this.body.enable = false;
+    this.setPosition(42000, 42000); //put offscren
   }
 }

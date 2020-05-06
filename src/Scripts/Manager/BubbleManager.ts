@@ -5,6 +5,7 @@ const INIT_BUBBLE_NUMBER: number = 37; //5 rows, 7 on odds 8 on evens, 7*3 + 8*2
 const BUBBLE_WIDTH: number = 90; //from ball radius *2. Will need to find out how to make this a global variable
 const ROW_HEIGHT: number = 80;
 const OFFSET: number = 45;
+const CENTER_OFFSET: number = 10; //for position checking purposes
 
 const NEIGHBOR_OFFSETS = [
   [
@@ -30,12 +31,16 @@ export default class BubbleManager {
   public bubblePool: Phaser.GameObjects.Group;
   public gridGroup: Phaser.GameObjects.Group;
   public shootGroup: Phaser.GameObjects.Group;
+  public scene: Phaser.Scene;
 
   public static get Instance() {
     return this.instance || (this.instance = new BubbleManager());
   }
 
   public initBubbles(scene: Phaser.Scene): void {
+    //scene.add.existing(this);
+
+    this.scene = scene;
     this.bubblePool = scene.add.group({
       classType: Bubble,
       maxSize: 200,
@@ -68,27 +73,31 @@ export default class BubbleManager {
     scene.physics.add.overlap(
       this.shootGroup,
       this.gridGroup,
-      this.snapBubble,
+      this.snapBubbleDelay,
       null,
       this
     );
 
     this.bubbleGridArray = new Array<Array<Bubble>>();
     let columnCounter = 7;
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 12; i++) {
       i % 2 === 0 ? (columnCounter = 8) : (columnCounter = 7); //check even/odd row
       //console.log("row :" + i);
       let row: Bubble[] = new Array<Bubble>();
 
       for (let j = 0; j < columnCounter; j++) {
-        let b: Bubble = new Bubble(
-          scene,
-          scene.cameras.main.width / 2,
-          scene.cameras.main.height / 2,
-          "bubble"
-        );
-        row.push(b);
-        this.gridGroup.add(b);
+        if (i < 5) {
+          let b: Bubble = new Bubble(
+            scene,
+            scene.cameras.main.width / 2,
+            scene.cameras.main.height / 2,
+            "bubble"
+          );
+          row.push(b);
+          this.gridGroup.add(b);
+        } else {
+          row.push(null);
+        }
       }
       this.bubbleGridArray.push(row);
     }
@@ -98,11 +107,14 @@ export default class BubbleManager {
 
   public sortBubbles(): void {
     //let screenWidth = scene.cameras.main.width;
-    //console.log("sort!");
+    console.log("sort!");
     for (let y = 0; y < this.bubbleGridArray.length; y++) {
       for (let x = 0; x < this.bubbleGridArray[y].length; x++) {
         let b: Bubble = this.bubbleGridArray[y][x];
-        if (b) this.setBubblePosOnGrid(b, x, y);
+        if (b) {
+          //b.body.enable = true;
+          this.setBubblePosOnGrid(b, x, y);
+        }
       }
     }
   }
@@ -124,6 +136,10 @@ export default class BubbleManager {
 
     if (!bubble) return null; //max size, none free
 
+    bubble.setActive(true).setVisible(true);
+    bubble.setDepth(5);
+    bubble.body.enable = true;
+
     return bubble;
   }
 
@@ -144,47 +160,111 @@ export default class BubbleManager {
     return new Array(gridX, gridY);
   }
 
-  public snapBubble(shootBubble: Bubble, gridBubble: Bubble): void {
+  public snapBubbleDelay(shootBubble: Bubble, gridBubble: Bubble) {
     shootBubble.setVelocity(0, 0);
+    BubbleManager.Instance.shootGroup.remove(shootBubble);
+    console.log("snap delay");
+    let timeDelay = BubbleManager.Instance.scene.time.delayedCall(
+      10,
+      BubbleManager.Instance.snapBubble,
+      [shootBubble, gridBubble],
+      this
+    );
+  }
 
-    this.shootGroup.remove(shootBubble);
-    this.gridGroup.add(shootBubble);
+  public snapBubble(shootBubble: Bubble, gridBubble: Bubble): void {
+    //shootBubble.disableBody(true);
+    //shootBubble.setVelocity(100, 100);
+    console.log("snap delay done");
+    let bm = BubbleManager.Instance;
 
-    let gridPos = this.getGridPosition(shootBubble.x, shootBubble.y);
-    if (this.bubbleGridArray.length - 1 < gridPos[1]) {
+    shootBubble.setVelocity(0, 0);
+    //bm.sortBubbles();
+    //shootBubble.setPosition(shootBubble.x, shootBubble.y);
+    bm.gridGroup.add(shootBubble);
+    //shootBubble.disableBody();
+    let gridPos = bm.getGridPosition(
+      shootBubble.x,
+      shootBubble.y - CENTER_OFFSET
+    );
+    console.log(gridPos);
+    //console.log(bm.bubbleGridArray.length);
+    if (bm.bubbleGridArray.length - 1 < gridPos[1]) {
       let n = 0;
       gridPos[1] % 2 === 0 ? (n = 8) : (n = 7); //check even/odd row
       let row = new Array<Bubble>(n);
-      this.bubbleGridArray.push(row);
+      bm.bubbleGridArray.push(row);
       //console.log(row);
     }
     //console.log("wut");
     let xLimit = Math.min(
       gridPos[0],
-      this.bubbleGridArray[gridPos[1]].length - 1
+      bm.bubbleGridArray[gridPos[1]].length - 1
     );
+    console.log(this.bubbleGridArray[gridPos[1]][xLimit]);
+    if (
+      bm.bubbleGridArray[gridPos[1]][xLimit] != null ||
+      bm.bubbleGridArray[gridPos[1]][xLimit] != undefined
+    ) {
+      //somehow got an occupied slot, offset 1 row down
+      console.log("st");
+      bm.bubbleGridArray[gridPos[1] + 1][xLimit] = shootBubble;
+    } else {
+      console.log("fuk");
+      bm.bubbleGridArray[gridPos[1]][xLimit] = shootBubble;
+    }
     //console.log(this.bubbleGridArray[gridPos[1]][xLimit]);
-    this.bubbleGridArray[gridPos[1]][xLimit] = shootBubble;
-    //console.log(gridPos);
-    this.setBubblePosOnGrid(shootBubble, gridPos[0], gridPos[1]);
     //this.sortBubbles();
-    //console.log(shootBubble.x + " " + shootBubble.y);
-    //console.log(shootBubble.y);
 
-    let cluster = this.findCluster(shootBubble, true, false);
+    //console.log(gridPos);
+    bm.setBubblePosOnGrid(shootBubble, gridPos[0], gridPos[1]);
+
+    //shootBubble.setPosition(pos[0] + OFFSET, pos[1] + OFFSET);
+    //shootBubble.setPosition(testx, testy);
+    bm.sortBubbles();
+
+    bm.popBubble(shootBubble);
+  }
+
+  popBubble(bubble: Bubble) {
+    console.log("attempt to pop bubble");
+    console.log(bubble.x);
+    console.log(bubble.y);
+    let cluster = this.findCluster(bubble, true, true, false);
 
     console.log(cluster);
 
-    cluster.forEach((element) => {
-      console.log("yoman ada bubble");
+    if (cluster.length >= 3) {
+      cluster.forEach((b: Bubble) => {
+        b.pop();
+      });
+      console.log("done popping");
+    }
+    this.dropBubble();
+  }
+
+  dropBubble() {
+    let floatCluster = this.findFloatingClusters();
+    //console.log(floatCluster);
+    console.log("drop bubble");
+
+    floatCluster.forEach((cluster) => {
+      //console.log(cluster);
+      cluster.forEach((bubble) => {
+        console.log("there should be a bubble named " + bubble.name);
+        bubble.drop();
+      });
     });
   }
 
   setBubblePosOnGrid(bubble: Bubble, x: number, y: number) {
     let pos = this.getBubbleCoordinate(x, y);
+    bubble.row = y;
+    bubble.column = x;
     //let n = 0;
 
     //fromSort ? (n = OFFSET) : (n = OFFSET);
+    //bubble.setPosition(0, 0);
     bubble.setPosition(pos[0] + OFFSET, pos[1] + OFFSET);
     //console.log(bubble.x, +" " + bubble.y);
   }
@@ -192,12 +272,13 @@ export default class BubbleManager {
   //cluster finding methods
   public findCluster(
     targetBubble: Bubble,
+    match: boolean,
     reset: boolean,
     skipremoved: boolean
   ) {
     if (reset) {
-      console.log("masuk reset");
-      this.resetProcessed(this);
+      //console.log("masuk reset");
+      BubbleManager.Instance.resetProcessed(BubbleManager.Instance);
     }
 
     let processTarget = [targetBubble];
@@ -207,21 +288,24 @@ export default class BubbleManager {
     while (processTarget.length > 0) {
       console.log("enter while loop");
       let currentBubble = processTarget.pop();
-      console.log(currentBubble.clusterProcessed);
+      //console.log(currentBubble.clusterProcessed);
 
       if (!currentBubble || currentBubble.clusterProcessed) {
-        console.log("bubble is null or already processed");
+        /*console.log(
+          "bubble is null or already processed, or is not trying to match colors"
+        );*/
         continue;
       }
 
       if (skipremoved && currentBubble.removedFromProcess) {
-        console.log("bubble is removed from process");
+        //console.log("bubble is removed from process");
         continue;
       }
-      console.log("checking for colors");
-      if (currentBubble.colorCode === targetBubble.colorCode) {
-        console.log("bubble match");
+      //console.log("checking for colors");
+      if (!match || currentBubble.colorCode === targetBubble.colorCode) {
+        //console.log("bubble match");
         clusterResult.push(currentBubble);
+        currentBubble.clusterProcessed = true;
 
         let neighbors = this.getNeighbors(currentBubble);
 
@@ -248,17 +332,25 @@ export default class BubbleManager {
     }
   }
 
-  getNeighbors(bubble: Bubble) {
+  getNeighbors(bubble: Bubble): Bubble[] {
     let gridPos = this.getGridPosition(bubble.x, bubble.y);
     let rowType = gridPos[1] % 2;
     let neighbors = new Array();
     let n = NEIGHBOR_OFFSETS[rowType];
+    //console.log(n);
 
     for (let i = 0; i < n.length; i++) {
       let nx = gridPos[0] + n[i][0];
       let ny = gridPos[1] + n[i][1];
-      let leny = this.bubbleGridArray.length;
-      if (ny < leny && nx >= 0 && nx < this.bubbleGridArray[ny].length) {
+      let leny = BubbleManager.Instance.bubbleGridArray.length;
+      //console.log(ny);
+      //console.log(BubbleManager.Instance.bubbleGridArray[ny]);
+      if (
+        ny > -1 &&
+        ny < leny &&
+        nx >= 0 &&
+        nx < BubbleManager.Instance.bubbleGridArray[ny].length
+      ) {
         if (this.bubbleGridArray[ny][nx]) {
           neighbors.push(this.bubbleGridArray[ny][nx]);
         }
@@ -268,8 +360,62 @@ export default class BubbleManager {
     return neighbors;
   }
 
+  findFloatingClusters() {
+    console.log("enter floating float");
+    this.resetProcessed(BubbleManager.Instance);
+
+    let floatingClusters = new Array();
+    let grid = BubbleManager.Instance.bubbleGridArray;
+    //console.log(grid);
+
+    for (let y = 0; y < grid.length; y++) {
+      //console.log("y = " + y);
+      for (let x = 0; x < grid[y].length; x++) {
+        //console.log("x = " + x);
+        let bubble: Bubble = grid[y][x];
+        if (bubble && !bubble.clusterProcessed) {
+          let cluster = BubbleManager.Instance.findCluster(
+            bubble,
+            false,
+            false,
+            true
+          );
+          //console.log(cluster);
+          if (!cluster || cluster.length <= 0) {
+            console.log("no cluster found for bubble " + bubble.name);
+            continue;
+          }
+
+          let floating = true;
+          //console.log(floating);
+          for (let i = 0; i < cluster.length; i++) {
+            console.log("found float?");
+            let gridPos = BubbleManager.Instance.getGridPosition(
+              cluster[i].x,
+              cluster[i].y
+            );
+            if (gridPos[1] == 0) {
+              floating = false;
+              break;
+            }
+          }
+          if (floating) {
+            console.log("found clusters");
+            floatingClusters.push(cluster);
+          }
+        }
+      }
+    }
+
+    return floatingClusters;
+  }
+
+  public removeBubbleFromGrid(bubble: Bubble) {
+    this.bubbleGridArray[bubble.row][bubble.column] = null;
+  }
+
   public update() {
-    this.sortBubbles(); //not entirely sure why this function doesnt run when put inside snapBubbles
-    //for not it runs on update to make sure the sprites align properly
+    //this.sortBubbles(); //not entirely sure why this function doesnt run when put inside snapBubbles
+    //for now it runs on update to make sure the sprites align properly
   }
 }

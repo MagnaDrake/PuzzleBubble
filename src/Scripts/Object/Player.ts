@@ -22,7 +22,7 @@ export default class Player extends Phaser.GameObjects.Rectangle {
       scene.cameras.main.height / 1.25
     );
 
-    this.bubblespeed = 2100;
+    this.bubblespeed = 2000;
 
     this.setInteractive();
     this.heldBubbles = new Array<Bubble>();
@@ -36,14 +36,14 @@ export default class Player extends Phaser.GameObjects.Rectangle {
     this.setBubbleForLaunch();
 
     this.on("pointerdown", function (pointer: Phaser.Input.Pointer) {
-      console.log("touch");
+      //console.log("touch");
       //console.log(pointer.x);
       //console.log(pointer.y);
       //this.heldBubbles[0].setPosition(pointer.x, pointer.y);
     });
 
     this.on("pointerup", function (pointer: Phaser.Input.Pointer) {
-      console.log("lift");
+      //console.log("lift");
       //console.log(pointer.x);
       //console.log(pointer.y);
 

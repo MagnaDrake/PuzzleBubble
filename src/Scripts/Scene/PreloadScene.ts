@@ -1,4 +1,5 @@
 import * as Phaser from "phaser";
+import Bubble from "../Object/Bubble";
 
 export default class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -17,6 +18,15 @@ export default class PreloadScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.anims.create({
+      key: "bubblePop",
+      frames: this.anims.generateFrameNumbers("bubble", {
+        start: 0,
+        end: 6,
+      }),
+      frameRate: 12,
+    });
+
     this.scene.start("GameScene");
   }
 }
