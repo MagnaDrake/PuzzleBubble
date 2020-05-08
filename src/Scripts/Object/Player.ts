@@ -14,6 +14,11 @@ export default class Player extends Phaser.GameObjects.Rectangle {
 
   private barLine: Phaser.Geom.Line;
 
+  private leftBorder: Phaser.Geom.Line;
+  private rightBorder: Phaser.Geom.Line;
+
+  private reflectionLine: Phaser.Geom.Line;
+
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y * 3.5, x * 2, y, 0xff0040, 0.5);
 
@@ -49,6 +54,18 @@ export default class Player extends Phaser.GameObjects.Rectangle {
       this.scene.cameras.main.width,
       this.launchPos.y
     );
+
+    this.leftBorder = new Phaser.Geom.Line(0, 0, 0, scene.cameras.main.height);
+
+    this.rightBorder = new Phaser.Geom.Line(
+      scene.cameras.main.width,
+      0,
+      scene.cameras.main.width,
+      scene.cameras.main.height
+    );
+
+    this.reflectionLine = new Phaser.Geom.Line(0, 0, 0, 0);
+
     graphics.lineStyle(10, 0x00fff0);
     graphics.strokeLineShape(this.line);
     graphics.strokeLineShape(this.guidanceHead);
@@ -71,15 +88,15 @@ export default class Player extends Phaser.GameObjects.Rectangle {
     this.on("drag", function (pointer: Phaser.Input.Pointer) {
       //console.log(pointer.x);
       //console.log(pointer.y);
-      let length = Phaser.Geom.Line.Length(this.line);
+      let length = Phaser.Geom.Line.Length(this.line) * 2;
       let reflectAngle = Phaser.Geom.Line.ReflectAngle(this.line, this.barLine);
       let refAngleInDeg = Phaser.Math.RadToDeg(reflectAngle);
       reflectAngle = Phaser.Math.DegToRad(-(refAngleInDeg - 180));
       this.line.x2 = pointer.x;
       this.line.y2 = pointer.y;
 
-      this.guidanceHead.x1 = -pointer.x;
-      this.guidanceHead.y1 = -pointer.y;
+      //this.guidanceHead.x1 = -pointer.x;
+      //this.guidanceHead.y1 = -pointer.y;
 
       Phaser.Geom.Line.SetToAngle(
         this.guidanceHead,
@@ -93,6 +110,48 @@ export default class Player extends Phaser.GameObjects.Rectangle {
       graphics.lineStyle(10, 0x00fff0);
       graphics.strokeLineShape(this.guidanceHead);
       graphics.strokeLineShape(this.line);
+
+      let p = new Phaser.Geom.Point();
+      console.log(this.rightBorder);
+      console.log(this.leftBorder);
+      //check if intersects with border left
+      if (
+        Phaser.Geom.Intersects.LineToLine(this.guidanceHead, this.leftBorder, p)
+      ) {
+        let screenReflect = Phaser.Geom.Line.ReflectAngle(
+          this.guidanceHead,
+          this.leftBorder
+        );
+        Phaser.Geom.Line.SetToAngle(
+          this.reflectionLine,
+          p.x,
+          p.y,
+          screenReflect,
+          length
+        );
+        graphics.strokeLineShape(this.reflectionLine);
+      }
+      //check if intersects with borer right
+      if (
+        Phaser.Geom.Intersects.LineToLine(
+          this.guidanceHead,
+          this.rightBorder,
+          p
+        )
+      ) {
+        let screenReflect = Phaser.Geom.Line.ReflectAngle(
+          this.guidanceHead,
+          this.rightBorder
+        );
+        Phaser.Geom.Line.SetToAngle(
+          this.reflectionLine,
+          p.x,
+          p.y,
+          screenReflect,
+          length
+        );
+        graphics.strokeLineShape(this.reflectionLine);
+      }
     });
 
     this.on("dragend", function (pointer: Phaser.Input.Pointer) {

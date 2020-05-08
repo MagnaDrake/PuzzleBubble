@@ -46,6 +46,7 @@ export default class Bubble extends Phaser.Physics.Arcade.Sprite {
 
     this.popAudio = this.scene.sound.add("bubblePopAudio");
     this.dropAudio = this.scene.sound.add("bubbleDropAudio");
+    this.setDepth(3);
   }
 
   public randomizeColor(): void {
