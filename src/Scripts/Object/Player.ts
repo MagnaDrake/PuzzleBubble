@@ -12,8 +12,10 @@ export default class Player extends Phaser.GameObjects.Rectangle {
   private line: Phaser.Geom.Line;
   private guidanceHead: Phaser.Geom.Line;
 
+  private barLine: Phaser.Geom.Line;
+
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, x, y * 3.5, x * 2, y, 0xff0000, 0.5);
+    super(scene, x, y * 3.5, x * 2, y, 0xff0040, 0.5);
 
     this.scene.add.existing(this);
 
@@ -40,6 +42,13 @@ export default class Player extends Phaser.GameObjects.Rectangle {
       this.launchPos.x,
       this.launchPos.y
     );
+
+    this.barLine = new Phaser.Geom.Line(
+      0,
+      this.launchPos.y,
+      this.scene.cameras.main.width,
+      this.launchPos.y
+    );
     graphics.lineStyle(10, 0x00fff0);
     graphics.strokeLineShape(this.line);
     graphics.strokeLineShape(this.guidanceHead);
@@ -62,17 +71,28 @@ export default class Player extends Phaser.GameObjects.Rectangle {
     this.on("drag", function (pointer: Phaser.Input.Pointer) {
       //console.log(pointer.x);
       //console.log(pointer.y);
-
+      let length = Phaser.Geom.Line.Length(this.line);
+      let reflectAngle = Phaser.Geom.Line.ReflectAngle(this.line, this.barLine);
+      let refAngleInDeg = Phaser.Math.RadToDeg(reflectAngle);
+      reflectAngle = Phaser.Math.DegToRad(-(refAngleInDeg - 180));
       this.line.x2 = pointer.x;
       this.line.y2 = pointer.y;
 
       this.guidanceHead.x1 = -pointer.x;
       this.guidanceHead.y1 = -pointer.y;
-      console.log(this.line.x2);
+
+      Phaser.Geom.Line.SetToAngle(
+        this.guidanceHead,
+        this.launchPos.x,
+        this.launchPos.y,
+        reflectAngle,
+        length
+      );
+
       graphics.clear();
       graphics.lineStyle(10, 0x00fff0);
-      graphics.strokeLineShape(this.line);
       graphics.strokeLineShape(this.guidanceHead);
+      graphics.strokeLineShape(this.line);
     });
 
     this.on("dragend", function (pointer: Phaser.Input.Pointer) {
@@ -90,11 +110,16 @@ export default class Player extends Phaser.GameObjects.Rectangle {
         this.launchPos.y - endPoint.y
       );
       dir.normalize();
-      //console.log(dir);
-      this.line.setTo(0, 0, 0, 0);
+      this.line.setTo(
+        this.launchPos.x,
+        this.launchPos.y,
+        this.launchPos.x,
+        this.launchPos.y
+      );
       graphics.clear();
-      graphics.lineStyle(2, 0x00ff00);
-      graphics.strokeLineShape(this.line);
+      //graphics.lineStyle(2, 0x00ff00);
+      //graphics.strokeLineShape(this.line);
+      //graphics.clear;
 
       this.launchBubble(dir);
     });
@@ -111,7 +136,8 @@ export default class Player extends Phaser.GameObjects.Rectangle {
   launchBubble(dir: Phaser.Math.Vector2): void {
     this.heldBubbles
       .shift()
-      .setVelocity(dir.x * this.bubblespeed, dir.y * this.bubblespeed);
+      .setVelocity(dir.x * this.bubblespeed, dir.y * this.bubblespeed)
+      .playShoot();
 
     let b: Bubble = BubbleManager.Instance.getBubble();
     this.heldBubbles.push(b);

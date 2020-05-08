@@ -1,8 +1,10 @@
 import * as Phaser from "phaser";
 import BubbleManager from "../Manager/BubbleManager";
+import ScoreManager from "../Manager/ScoreManager";
 const offsetX: number = 33;
 const offsetY: number = 33;
 const ballSize: number = 56;
+const score: number = 100;
 const COLORS = {
   0: "FF2D00", //red
   1: "00CE2E", //green
@@ -18,6 +20,8 @@ export default class Bubble extends Phaser.Physics.Arcade.Sprite {
   public removedFromProcess: boolean;
   public row: number;
   public column: number;
+  private popAudio;
+  private dropAudio;
   constructor(scene: Phaser.Scene, x: number, y: number, texture: string) {
     super(scene, x, y, "bubble");
 
@@ -40,6 +44,9 @@ export default class Bubble extends Phaser.Physics.Arcade.Sprite {
     this.on("pointerdown", function () {
       this.setVelocity(-100, 100);
     });
+
+    this.popAudio = this.scene.sound.add("bubblePopAudio");
+    this.dropAudio = this.scene.sound.add("bubbleDropAudio");
   }
 
   public randomizeColor(): void {
@@ -49,13 +56,14 @@ export default class Bubble extends Phaser.Physics.Arcade.Sprite {
     this.setTint(color.color);
   }
   update() {
-    console.log(this.x + " " + this.y);
+    //console.log(this.x + " " + this.y);
   }
 
   pop() {
     //no idea what im doing
     //BubbleManager.Instance.sortBubbles();
-    console.log("poppin");
+    //console.log("poppin");
+    this.popAudio.play();
     //BubbleManager.Instance.setBubblePosOnGrid(this, this.row, this.column);
     BubbleManager.Instance.removeBubbleFromGrid(this);
     //this.setPosition(this.x, this.y);
@@ -70,7 +78,8 @@ export default class Bubble extends Phaser.Physics.Arcade.Sprite {
   }
 
   drop() {
-    console.log("IM DROPPING");
+    //console.log("IM DROPPING");
+    this.dropAudio.play();
     BubbleManager.Instance.removeBubbleFromGrid(this);
 
     this.setVelocityY(500);
@@ -86,7 +95,9 @@ export default class Bubble extends Phaser.Physics.Arcade.Sprite {
 
   popCallback() {
     this.setVelocity(0, 0);
-    console.log("pop bubble " + this.name);
+    ScoreManager.Instance.addScore(100);
+
+    //console.log("pop bubble " + this.name);
     //BubbleManager.Instance.removeBubbleFromGrid(this);
 
     this.setPosition(42000, 42000); //put offscren
@@ -97,5 +108,9 @@ export default class Bubble extends Phaser.Physics.Arcade.Sprite {
     this.setActive(false).setVisible(false);
     //this.body.enable = false;
     this.setPosition(42000, 42000); //put offscren
+  }
+
+  playShoot() {
+    this.popAudio.play();
   }
 }
