@@ -30,7 +30,6 @@ export default class Bubble extends Phaser.Physics.Arcade.Sprite {
     this.removedFromProcess = false;
     scene.physics.add.existing(this);
     this.setCircle(ballSize, offsetX, offsetY);
-    //this.setInteractive();
 
     this.setCollideWorldBounds(true);
     this.setBounce(1);
@@ -60,16 +59,10 @@ export default class Bubble extends Phaser.Physics.Arcade.Sprite {
   }
 
   pop() {
-    //no idea what im doing
-    //BubbleManager.Instance.sortBubbles();
-    //console.log("poppin");
     this.popAudio.play();
-    //BubbleManager.Instance.setBubblePosOnGrid(this, this.row, this.column);
     BubbleManager.Instance.removeBubbleFromGrid(this);
-    //this.setPosition(this.x, this.y);
 
     this.play("bubblePop");
-    //this.on("animationstart", BubbleManager.Instance.sortBubbles, this);
 
     BubbleManager.Instance.bubblePool.add(this);
     BubbleManager.Instance.gridGroup.remove(this);
@@ -78,7 +71,6 @@ export default class Bubble extends Phaser.Physics.Arcade.Sprite {
   }
 
   drop() {
-    //console.log("IM DROPPING");
     this.dropAudio.play();
     BubbleManager.Instance.removeBubbleFromGrid(this);
 
@@ -90,23 +82,16 @@ export default class Bubble extends Phaser.Physics.Arcade.Sprite {
       callbackScope: this,
       onComplete: this.popCallback,
     });
-    //BubbleManager.Instance.removeBubbleFromGrid(this);
   }
 
   popCallback() {
     this.setVelocity(0, 0);
     ScoreManager.Instance.addScore(100);
 
-    //console.log("pop bubble " + this.name);
-    //BubbleManager.Instance.removeBubbleFromGrid(this);
-
     this.setPosition(42000, 42000); //put offscren
-    //console.group(this.parentContainer);
     BubbleManager.Instance.bubblePool.killAndHide(this);
-    //this.scene.physics.world.removeCollider(this);
     this.setTexture("bubble");
     this.setActive(false).setVisible(false);
-    //this.body.enable = false;
     this.setPosition(42000, 42000); //put offscren
   }
 

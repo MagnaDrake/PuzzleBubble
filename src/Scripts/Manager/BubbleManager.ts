@@ -42,8 +42,6 @@ export default class BubbleManager {
   }
 
   public initBubbles(scene: Phaser.Scene): void {
-    //scene.add.existing(this);
-
     let ceiling = new Phaser.GameObjects.Rectangle(
       scene,
       scene.cameras.main.width / 2,
@@ -65,18 +63,14 @@ export default class BubbleManager {
       maxSize: 200,
       createCallback: function (bubble: Bubble) {
         bubble.setName("pool " + this.getLength());
-        //console.log(bubble.name);
       },
-      //runChildUpdate: true,
     });
 
     this.gridGroup = scene.add.group({
       classType: Bubble,
       createCallback: function (bubble: Bubble) {
         bubble.setName("grid " + this.getLength());
-        //console.log(bubble.name);
       },
-      //runChildUpdate: true,
     });
 
     this.shootGroup = scene.add.group({
@@ -84,9 +78,7 @@ export default class BubbleManager {
       maxSize: 5,
       createCallback: function (bubble: Bubble) {
         bubble.setName("shoot " + this.getLength());
-        //console.log(bubble.name);
       },
-      //runChildUpdate: true,
     });
 
     scene.physics.add.overlap(
@@ -109,7 +101,6 @@ export default class BubbleManager {
     let columnCounter = 7;
     for (let i = 0; i < 12; i++) {
       i % 2 === 0 ? (columnCounter = 8) : (columnCounter = 7); //check even/odd row
-      //console.log("row :" + i);
       let row: Bubble[] = new Array<Bubble>();
 
       for (let j = 0; j < columnCounter; j++) {
@@ -136,7 +127,6 @@ export default class BubbleManager {
   }
 
   public sortBubbles(): void {
-    //let screenWidth = scene.cameras.main.width;
     let count = 0;
     console.log("sort!");
     for (let y = 0; y < this.bubbleGridArray.length; y++) {
@@ -149,7 +139,6 @@ export default class BubbleManager {
         }
       }
     }
-    console.log(count);
     if (count <= 0) this.gameOver();
   }
 
@@ -178,8 +167,6 @@ export default class BubbleManager {
   }
 
   getGridPosition(x: number, y: number): number[] {
-    //console.log(Math.floor(x) + " " + Math.floor(y));
-    //this.sortBubbles();
     let gridY = Math.floor(y / ROW_HEIGHT);
 
     let xoffset = 0;
@@ -207,98 +194,71 @@ export default class BubbleManager {
   }
 
   public snapBubble(shootBubble: Bubble, gridBubble: Bubble): void {
-    //shootBubble.disableBody(true);
-    //shootBubble.setVelocity(100, 100);
     let bm = BubbleManager.Instance;
 
     shootBubble.setVelocity(0, 0);
-    //bm.sortBubbles();
-    //shootBubble.setPosition(shootBubble.x, shootBubble.y);
     bm.gridGroup.add(shootBubble);
-    //shootBubble.disableBody();
     let gridPos = bm.getGridPosition(
       shootBubble.x,
       shootBubble.y - CENTER_OFFSET
     );
-    //console.log(gridPos);
 
     if (gridPos[1] >= 11) {
       this.gameOver();
       return;
     }
-    //console.log(bm.bubbleGridArray.length);
     if (bm.bubbleGridArray.length - 1 < gridPos[1]) {
       let n = 0;
       gridPos[1] % 2 === 0 ? (n = 8) : (n = 7); //check even/odd row
       let row = new Array<Bubble>(n);
       bm.bubbleGridArray.push(row);
-      //console.log(row);
     }
-    //console.log("wut");
     let xLimit = Math.min(
       gridPos[0],
       bm.bubbleGridArray[gridPos[1]].length - 1
     );
-    //console.log(this.bubbleGridArray[gridPos[1]][xLimit]);
     if (
       bm.bubbleGridArray[gridPos[1]][xLimit] != null ||
       bm.bubbleGridArray[gridPos[1]][xLimit] != undefined
     ) {
       //somehow got an occupied slot, offset 1 row down
-      //console.log("st");
       if (
         bm.bubbleGridArray[gridPos[1] + 1][xLimit] != null ||
         bm.bubbleGridArray[gridPos[1] + 1][xLimit] != undefined
       ) {
         //1 row down still has a bubble in, offset 1 column right
-        //console.log("nani");
         bm.bubbleGridArray[gridPos[1] + 1][xLimit + 1] = shootBubble;
       } else {
-        //console.log("wot");
         bm.bubbleGridArray[gridPos[1] + 1][xLimit] = shootBubble;
       }
     } else {
-      //console.log("fuk");
       bm.bubbleGridArray[gridPos[1]][xLimit] = shootBubble;
     }
-    //console.log(this.bubbleGridArray[gridPos[1]][xLimit]);
-    //this.sortBubbles();
 
-    //console.log(gridPos);
     bm.setBubblePosOnGrid(shootBubble, gridPos[0], gridPos[1]);
 
-    //shootBubble.setPosition(pos[0] + OFFSET, pos[1] + OFFSET);
-    //shootBubble.setPosition(testx, testy);
     bm.sortBubbles();
 
     bm.popBubble(shootBubble);
   }
 
   popBubble(bubble: Bubble) {
-    //console.log("attempt to pop bubble");
-
     let cluster = this.findCluster(bubble, true, true, false);
-
-    console.log(cluster);
 
     if (cluster.length >= 3) {
       cluster.forEach((b: Bubble) => {
         b.pop();
       });
-      //console.log("done popping");
       this.dropBubble();
     }
   }
 
   dropBubble() {
     let floatCluster = this.findFloatingClusters();
-    //console.log(floatCluster);
     console.log("drop bubble");
 
     floatCluster.forEach((cluster) => {
-      //console.log(cluster);
       cluster.forEach((bubble) => {
-        console.log("there should be a bubble named " + bubble.name);
         bubble.drop();
       });
     });
@@ -309,12 +269,8 @@ export default class BubbleManager {
     let pos = this.getBubbleCoordinate(x, y);
     bubble.row = y;
     bubble.column = x;
-    //let n = 0;
 
-    //fromSort ? (n = OFFSET) : (n = OFFSET);
-    //bubble.setPosition(0, 0);
     bubble.setPosition(pos[0] + OFFSET, pos[1] + OFFSET);
-    //console.log(bubble.x, +" " + bubble.y);
   }
 
   //cluster finding methods
@@ -325,33 +281,23 @@ export default class BubbleManager {
     skipremoved: boolean
   ) {
     if (reset) {
-      //console.log("masuk reset");
       BubbleManager.Instance.resetProcessed(BubbleManager.Instance);
     }
 
     let processTarget = [targetBubble];
-    //targetBubble.clusterProcessed = true;
     let clusterResult = new Array();
 
     while (processTarget.length > 0) {
-      //console.log("enter while loop");
       let currentBubble = processTarget.pop();
-      //console.log(currentBubble.clusterProcessed);
 
       if (!currentBubble || currentBubble.clusterProcessed) {
-        /*console.log(
-          "bubble is null or already processed, or is not trying to match colors"
-        );*/
         continue;
       }
 
       if (skipremoved && currentBubble.removedFromProcess) {
-        //console.log("bubble is removed from process");
         continue;
       }
-      //console.log("checking for colors");
       if (!match || currentBubble.colorCode === targetBubble.colorCode) {
-        //console.log("bubble match");
         clusterResult.push(currentBubble);
         currentBubble.clusterProcessed = true;
 
@@ -360,12 +306,10 @@ export default class BubbleManager {
         for (let i = 0; i < neighbors.length; i++) {
           if (!neighbors[i].clusterProcessed) {
             processTarget.push(neighbors[i]);
-            //neighbors[i].clusterProcessed = true;
           }
         }
       }
     }
-    //this.resetProcessed();
     return clusterResult;
   }
 
@@ -385,14 +329,11 @@ export default class BubbleManager {
     let rowType = gridPos[1] % 2;
     let neighbors = new Array();
     let n = NEIGHBOR_OFFSETS[rowType];
-    //console.log(n);
 
     for (let i = 0; i < n.length; i++) {
       let nx = gridPos[0] + n[i][0];
       let ny = gridPos[1] + n[i][1];
       let leny = BubbleManager.Instance.bubbleGridArray.length;
-      //console.log(ny);
-      //console.log(BubbleManager.Instance.bubbleGridArray[ny]);
       if (
         ny > -1 &&
         ny < leny &&
@@ -409,17 +350,13 @@ export default class BubbleManager {
   }
 
   findFloatingClusters() {
-    //console.log("enter floating float");
     this.resetProcessed(BubbleManager.Instance);
 
     let floatingClusters = new Array();
     let grid = BubbleManager.Instance.bubbleGridArray;
-    //console.log(grid);
 
     for (let y = 0; y < grid.length; y++) {
-      //console.log("y = " + y);
       for (let x = 0; x < grid[y].length; x++) {
-        //console.log("x = " + x);
         let bubble: Bubble = grid[y][x];
         if (bubble && !bubble.clusterProcessed) {
           let cluster = BubbleManager.Instance.findCluster(
@@ -428,16 +365,12 @@ export default class BubbleManager {
             false,
             true
           );
-          //console.log(cluster);
           if (!cluster || cluster.length <= 0) {
-            //console.log("no cluster found for bubble " + bubble.name);
             continue;
           }
 
           let floating = true;
-          //console.log(floating);
           for (let i = 0; i < cluster.length; i++) {
-            //console.log("found float?");
             let gridPos = BubbleManager.Instance.getGridPosition(
               cluster[i].x,
               cluster[i].y
@@ -448,7 +381,6 @@ export default class BubbleManager {
             }
           }
           if (floating) {
-            //console.log("found clusters");
             floatingClusters.push(cluster);
           }
         }
@@ -468,7 +400,6 @@ export default class BubbleManager {
   }
 
   public gameOver() {
-    console.log(this.player);
     this.player.setActive(false).setVisible(false);
     this.scene.physics.world.colliders.destroy();
 
