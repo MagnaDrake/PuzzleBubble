@@ -37,5 +37,6 @@ export default class GameScene extends Phaser.Scene {
   update(): void {
     this.fpsText.update();
     this.bubbleManager.update();
+    this.player.update(this.time);
   }
 }

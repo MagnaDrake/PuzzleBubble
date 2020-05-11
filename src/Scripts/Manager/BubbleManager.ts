@@ -405,4 +405,11 @@ export default class BubbleManager {
 
     this.gameOverPanel.show(true);
   }
+
+  public getBubbleFromGrid(x: number, y: number) {
+    //console.log(x + " " + y);
+    if (y < this.bubbleGridArray.length && y >= 0) {
+      return this.bubbleGridArray[y][x];
+    }
+  }
 }

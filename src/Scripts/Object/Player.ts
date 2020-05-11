@@ -3,6 +3,9 @@ import BubbleManager from "../Manager/BubbleManager";
 import Bubble from "../Object/Bubble";
 import { Vector } from "matter";
 
+const Y_LIMIT: number = 75;
+const FIRE_RATE: number = 400;
+
 export default class Player extends Phaser.GameObjects.Rectangle {
   public colorCode: number;
   private heldBubbles: Bubble[];
@@ -11,6 +14,7 @@ export default class Player extends Phaser.GameObjects.Rectangle {
   private bubblespeed: number;
   private line: Phaser.Geom.Line;
   private guidanceHead: Phaser.Geom.Line;
+  private graphics: Phaser.GameObjects.Graphics;
 
   private barLine: Phaser.Geom.Line;
 
@@ -19,12 +23,16 @@ export default class Player extends Phaser.GameObjects.Rectangle {
 
   private reflectionLine: Phaser.Geom.Line;
 
+  private lastFired: number;
+
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y * 3.5, x * 2, y, 0xff0040, 0.5);
 
     this.scene.add.existing(this);
 
     this.offset = 150;
+
+    this.lastFired = 0;
 
     this.launchPos = new Phaser.Math.Vector2(
       scene.cameras.main.width / 2,
@@ -33,7 +41,7 @@ export default class Player extends Phaser.GameObjects.Rectangle {
 
     this.bubblespeed = 2000;
 
-    let graphics = scene.add.graphics();
+    this.graphics = scene.add.graphics();
     this.line = new Phaser.Geom.Line(
       this.launchPos.x,
       this.launchPos.y,
@@ -66,9 +74,9 @@ export default class Player extends Phaser.GameObjects.Rectangle {
 
     this.reflectionLine = new Phaser.Geom.Line(0, 0, 0, 0);
 
-    graphics.lineStyle(10, 0x00fff0);
-    graphics.strokeLineShape(this.line);
-    graphics.strokeLineShape(this.guidanceHead);
+    this.graphics.lineStyle(10, 0x00fff0);
+    this.graphics.strokeLineShape(this.line);
+    this.graphics.strokeLineShape(this.guidanceHead);
 
     this.setInteractive({ draggable: true });
     this.heldBubbles = new Array<Bubble>();
@@ -88,12 +96,17 @@ export default class Player extends Phaser.GameObjects.Rectangle {
     this.on("drag", function (pointer: Phaser.Input.Pointer) {
       //console.log(pointer.x);
       //console.log(pointer.y);
-      let length = Phaser.Geom.Line.Length(this.line) * 2;
+      //let length = Phaser.Geom.Line.Length(this.line) * 5;
+      let length = 2000;
       let reflectAngle = Phaser.Geom.Line.ReflectAngle(this.line, this.barLine);
       let refAngleInDeg = Phaser.Math.RadToDeg(reflectAngle);
       reflectAngle = Phaser.Math.DegToRad(-(refAngleInDeg - 180));
       this.line.x2 = pointer.x;
-      this.line.y2 = pointer.y;
+      if (pointer.y < this.launchPos.y + Y_LIMIT) {
+        this.line.y2 = this.launchPos.y + Y_LIMIT;
+      } else {
+        this.line.y2 = pointer.y;
+      }
 
       //this.guidanceHead.x1 = -pointer.x;
       //this.guidanceHead.y1 = -pointer.y;
@@ -106,14 +119,19 @@ export default class Player extends Phaser.GameObjects.Rectangle {
         length
       );
 
-      graphics.clear();
-      graphics.lineStyle(10, 0x00fff0);
-      graphics.strokeLineShape(this.guidanceHead);
-      graphics.strokeLineShape(this.line);
+      this.graphics.clear();
+      this.graphics.lineStyle(10, 0x00fff0);
+
+      let points = this.guidanceHead.getPoints(32);
+
+      this.drawGuideline(points);
+
+      //graphics.strokeLineShape(this.guidanceHead);
+      this.graphics.strokeLineShape(this.line);
 
       let p = new Phaser.Geom.Point();
-      console.log(this.rightBorder);
-      console.log(this.leftBorder);
+      //console.log(this.rightBorder);
+      //console.log(this.leftBorder);
       //check if intersects with border left
       if (
         Phaser.Geom.Intersects.LineToLine(this.guidanceHead, this.leftBorder, p)
@@ -129,7 +147,10 @@ export default class Player extends Phaser.GameObjects.Rectangle {
           screenReflect,
           length
         );
-        graphics.strokeLineShape(this.reflectionLine);
+        let points = this.reflectionLine.getPoints(32);
+
+        this.drawGuideline(points);
+        //graphics.strokeLineShape(this.reflectionLine);
       }
       //check if intersects with borer right
       if (
@@ -150,7 +171,16 @@ export default class Player extends Phaser.GameObjects.Rectangle {
           screenReflect,
           length
         );
-        graphics.strokeLineShape(this.reflectionLine);
+        let points = this.reflectionLine.getPoints(32);
+
+        this.drawGuideline(points);
+        /*let points = this.reflectionLine.getPoints(32);
+
+        for (let i = 0; i < points.length; i++) {
+          let point = points[i];
+          graphics.fillRect(point.x - 2, point.y - 2, 10, 10);
+        }*/
+        //graphics.strokeLineShape(this.reflectionLine);
       }
     });
 
@@ -158,10 +188,17 @@ export default class Player extends Phaser.GameObjects.Rectangle {
       console.log("lift");
       //console.log(pointer.x);
       //console.log(pointer.y);
+      let yPos: number = 0;
+
+      if (pointer.y < this.launchPos.y + Y_LIMIT) {
+        yPos = this.launchPos.y + Y_LIMIT;
+      } else {
+        yPos = pointer.y;
+      }
 
       let endPoint: Phaser.Math.Vector2 = new Phaser.Math.Vector2(
         pointer.x,
-        pointer.y
+        yPos
       );
 
       let dir: Phaser.Math.Vector2 = new Phaser.Math.Vector2(
@@ -175,12 +212,17 @@ export default class Player extends Phaser.GameObjects.Rectangle {
         this.launchPos.x,
         this.launchPos.y
       );
-      graphics.clear();
+      this.graphics.clear();
       //graphics.lineStyle(2, 0x00ff00);
       //graphics.strokeLineShape(this.line);
       //graphics.clear;
+      //console.log(this.scene.time);
+      //console.log(this.lastFired);
+      if (this.scene.time.now > this.lastFired) {
+        this.lastFired = this.scene.time.now + FIRE_RATE;
 
-      this.launchBubble(dir);
+        this.launchBubble(dir);
+      }
     });
   }
 
@@ -204,5 +246,19 @@ export default class Player extends Phaser.GameObjects.Rectangle {
     BubbleManager.Instance.bubblePool.remove(b);
 
     this.setBubbleForLaunch();
+  }
+
+  drawGuideline(points: Array<any>) {
+    for (let i = 0; i < points.length; i++) {
+      let point = points[i];
+      let gridPos = BubbleManager.Instance.getGridPosition(point.x, point.y);
+      if (!BubbleManager.Instance.getBubbleFromGrid(gridPos[0], gridPos[1])) {
+        this.graphics.fillRect(point.x - 2, point.y - 2, 10, 10);
+      }
+    }
+  }
+
+  update(time) {
+    //console.log(time);
   }
 }
